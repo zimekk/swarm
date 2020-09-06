@@ -1,0 +1,13 @@
+{
+  "name": "@env/jest-preset",
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "test": "echo test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "identity-obj-proxy": "^3.0.0"
+  }
+}

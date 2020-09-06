@@ -1,6 +1,10 @@
-version: '3.7'
+version: "3.7"
 
 services:
+  app:
+    image: zimekk/swarm
+    environment:
+      - VIRTUAL_HOST=$HOST,www.$HOST
 
   proxy:
     image: jwilder/nginx-proxy
@@ -8,48 +12,17 @@ services:
       - 80:80
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
+    depends_on:
+      - app
     environment:
-      - DEFAULT_HOST=www.$HOST
-
-  nginx:
-    image: nginx:latest
-#    deploy:
-#      replicas: 1
-#      restart_policy:
-#        condition: on-failure
-#      placement:
-#        constraints: [node.role == worker]
-#    ports:
-#      - 80:80
-#    depends_on:
-#      - web
-#    networks:
-#      - app
-    environment:
-      - VIRTUAL_HOST=www.$HOST
+      - DEFAULT_HOST=$HOST
 
   visualizer:
     image: dockersamples/visualizer:latest
-#    ports:
-#      - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     deploy:
       placement:
         constraints: [node.role == manager]
-#    networks:
-#      - app
     environment:
       - VIRTUAL_HOST=visualizer.$HOST
-
-#networks:
-#  app:
-#    driver: overlay
-
-#volumes:
-#  data-volume:
-#    driver: local
-
-#secrets:
-#  secret_code:
-#    external: true

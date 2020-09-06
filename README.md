@@ -30,6 +30,7 @@ docker-compose version 1.26.2, build eefe0d31
 
 ```sh
 ~/projects/swarm$ docker-compose config
+~/projects/swarm$ docker-compose build app
 ~/projects/swarm$ ./deploy.sh
 ```
 
