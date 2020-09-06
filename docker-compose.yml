@@ -2,6 +2,15 @@ version: '3.7'
 
 services:
 
+  proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    environment:
+      - DEFAULT_HOST=www.$HOST
+
   nginx:
     image: nginx:latest
 #    deploy:
@@ -10,24 +19,28 @@ services:
 #        condition: on-failure
 #      placement:
 #        constraints: [node.role == worker]
-    ports:
-      - 80:80
+#    ports:
+#      - 80:80
 #    depends_on:
 #      - web
 #    networks:
 #      - app
+    environment:
+      - VIRTUAL_HOST=www.$HOST
 
   visualizer:
     image: dockersamples/visualizer:latest
-    ports:
-      - 8080:8080
+#    ports:
+#      - 8080:8080
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - /var/run/docker.sock:/var/run/docker.sock
     deploy:
       placement:
         constraints: [node.role == manager]
 #    networks:
 #      - app
+    environment:
+      - VIRTUAL_HOST=visualizer.$HOST
 
 #networks:
 #  app:
