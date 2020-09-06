@@ -2,6 +2,21 @@ version: '3.7'
 
 services:
 
+  nginx:
+    image: nginx:latest
+#    deploy:
+#      replicas: 1
+#      restart_policy:
+#        condition: on-failure
+#      placement:
+#        constraints: [node.role == worker]
+    ports:
+      - 80:80
+#    depends_on:
+#      - web
+#    networks:
+#      - app
+
   visualizer:
     image: dockersamples/visualizer:latest
     ports:
