@@ -31,6 +31,11 @@ docker-compose version 1.26.2, build eefe0d31
 ```sh
 ~/projects/swarm$ docker-compose config
 ~/projects/swarm$ docker-compose build app
+```
+
+```sh
+~/projects/swarm$ cat ~/GH_TOKEN.txt | docker login https://docker.pkg.github.com -u zimekk --password-stdin
+~/projects/swarm$ docker pull docker.pkg.github.com/zimekk/swarm/app:latest
 ~/projects/swarm$ ./deploy.sh
 ```
 

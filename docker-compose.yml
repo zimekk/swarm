@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   app:
-    image: zimekk/swarm
+    image: docker.pkg.github.com/zimekk/swarm/app
     environment:
       - VIRTUAL_HOST=$HOST,www.$HOST
 
@@ -12,8 +12,6 @@ services:
       - 80:80
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
-    depends_on:
-      - app
     environment:
       - DEFAULT_HOST=$HOST
 
