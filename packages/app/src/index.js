@@ -1,18 +1,24 @@
 import express from "express";
+import { createProxyServer } from "http-proxy";
 import config from "./config";
 import { name } from "../package";
 
-const app = express();
+const proxy = createProxyServer();
 
-app.get("/", (req, res) =>
-  res.type("application/json").send({ name, ...req.query })
-);
-
-const server = app.listen(config.get("PORT"), () =>
-  (({ address, port }) =>
-    console.log(
-      `Server is running on http://${
-        address === "::" ? "localhost" : address
-      }:${port}`
-    ))(server.address())
-);
+const server = express()
+  .use("/visualizer", (req, res) =>
+    proxy.web(req, res, {
+      target: "http://visualizer:8080",
+    })
+  )
+  .get("/", (req, res) =>
+    res.type("application/json").send({ name, ...req.query })
+  )
+  .listen(config.get("PORT"), () =>
+    (({ address, port }) =>
+      console.log(
+        `Server is running on http://${
+          address === "::" ? "localhost" : address
+        }:${port}`
+      ))(server.address())
+  );
