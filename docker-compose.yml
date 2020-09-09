@@ -4,7 +4,7 @@ services:
   app:
     image: docker.pkg.github.com/zimekk/swarm/app
     environment:
-      - VIRTUAL_HOST=$HOST,www.$HOST
+      - VIRTUAL_HOST=ubuntu,www.ubuntu
 
   proxy:
     image: jwilder/nginx-proxy
@@ -13,7 +13,7 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
     environment:
-      - DEFAULT_HOST=$HOST
+      - DEFAULT_HOST=ubuntu
 
   visualizer:
     image: dockersamples/visualizer:latest
@@ -23,4 +23,4 @@ services:
       placement:
         constraints: [node.role == manager]
     environment:
-      - VIRTUAL_HOST=visualizer.$HOST
+      - VIRTUAL_HOST=visualizer.ubuntu
