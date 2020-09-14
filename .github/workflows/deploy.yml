@@ -1,0 +1,89 @@
+name: Docker
+
+on:
+  push:
+    # Publish `master` as Docker `latest` image.
+    branches:
+      - master
+
+    # Publish `v1.2.3` tags as releases.
+    tags:
+      - v*
+
+  # Run tests for any PRs.
+  pull_request:
+
+env:
+  # TODO: Change variable to your image's name.
+  IMAGE_NAME: app
+  INPUT_REMOTE_HOST: ssh://ubuntu@54.38.137.98
+
+jobs:
+  # Run tests.
+  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+  # test:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v2
+
+  #     - name: Run tests
+  #       run: |
+  #         if [ -f docker-compose.test.yml ]; then
+  #           docker-compose --file docker-compose.test.yml build
+  #           docker-compose --file docker-compose.test.yml run sut
+  #         else
+  #           docker build . --file Dockerfile
+  #         fi
+
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  push:
+    # Ensure test job passes before pushing image.
+    # needs: test
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Build image
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          docker build . --tag $IMAGE_ID:${GITHUB_SHA::7} --tag $IMAGE_ID:latest
+
+      - name: Log into registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=${GITHUB_SHA::7}
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker push $IMAGE_ID
+
+      - name: Deploy stack
+        run: |
+          SSH_HOST=${INPUT_REMOTE_HOST#"ssh://"}
+          SSH_HOST=${SSH_HOST#*@}
+          echo "Registering SSH keys..."
+          mkdir -p "$HOME/.ssh"
+          printf '%s' "$INPUT_SSH_PRIVATE_KEY" > "$HOME/.ssh/docker"
+          chmod 600 "$HOME/.ssh/docker"
+          eval $(ssh-agent)
+          ssh-add "$HOME/.ssh/docker"
+          printf '%s %s\n' "$SSH_HOST" "$INPUT_SSH_PUBLIC_KEY" >> "$HOME/.ssh/known_hosts"
+          echo "Connecting to $INPUT_REMOTE_HOST..."
+          VERSION=${GITHUB_SHA::7} docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.yml --prune --resolve-image always --with-registry-auth swarm
+        env:
+          INPUT_SSH_PRIVATE_KEY: ${{ secrets.DOCKER_SSH_PRIVATE_KEY }}
+          INPUT_SSH_PUBLIC_KEY: ${{ secrets.DOCKER_SSH_PUBLIC_KEY }}

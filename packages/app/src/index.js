@@ -1,7 +1,7 @@
 import express from "express";
 import { createProxyServer } from "http-proxy";
 import config from "./config";
-import { name } from "../package";
+import { name, version } from "../package";
 
 const proxy = createProxyServer();
 
@@ -12,7 +12,7 @@ const server = express()
     })
   )
   .get("/", (req, res) =>
-    res.type("application/json").send({ name, ...req.query })
+    res.type("application/json").send({ name, version, ...req.query })
   )
   .listen(config.get("PORT"), () =>
     (({ address, port }) =>
