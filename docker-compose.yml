@@ -1,26 +1,96 @@
 version: "3.7"
 
 services:
+  traefik:
+    image: traefik:2.0.2
+    command:
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--log.level=INFO"
+#      - "--log.level=DEBUG"
+#      - "--providers.docker=true"
+#      - "--providers.docker.watch=true"
+      - "--providers.docker.swarmmode=true"
+#      - "--providers.docker.network=proxy"
+#      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+#      - "--providers.docker.swarmModeRefreshSeconds=15s"
+      - "--api"
+#      - "--providers.docker.exposedbydefault=false"
+#      - "--providers.docker.domain=www.swarm.makarewicz.eu"
+      - --certificatesresolvers.le.acme.httpChallenge.entrypoint=web
+      - --certificatesresolvers.le.acme.email=marcin@makarewicz.eu
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+#      - --certificatesresolvers.le.acme.httpchallenge=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+#      - ./data/acme.json:/acme.json
+      - letsencrypt:/letsencrypt
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      labels:
+#        - "traefik.enable=true" # Enable Traefik, because we disabled expose a service by default
+        - "traefik.http.routers.t.rule=Host(`traefik.swarm.makarewicz.eu`)" # Tell Traefik to create routre 't' and catch all requests with given Host (http header: Host)
+        - "traefik.http.routers.t.service=api@internal" # the router 't' will forward request to service api@internal
+#        - "traefik.http.routers.t.tls.certresolver=le" # the router 't' will use TLS certresolver called LE
+#        - "traefik.http.routers.t.entrypoints=websecure,web" # the router 't' should listen on both entrypoints
+        - "traefik.http.services.t.loadbalancer.server.port=8080" # the router 't' will balance incoming requests between servers listens on port 8080
+#        - "traefik.http.services.t.loadbalancer.passhostheader=true"
+        # https://stackoverflow.com/a/58477067
+        # middleware redirect
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        # global redirect to https
+        - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
+        - "traefik.http.routers.redirs.entrypoints=web"
+        - "traefik.http.routers.redirs.middlewares=redirect-to-https"
+  whoami:
+    # A container that exposes an API to show its IP address
+    image: containous/whoami
+#    ports:
+#      - 8080:80
+    deploy:
+      replicas: 3
+      labels:
+#        - "traefik.enable=true"
+#        - "traefik.http.routers.who.rule=Host(`54.38.138.125`,`54.38.137.98`,`worker1.makarewicz.eu`)"
+        - "traefik.http.routers.who.rule=Host(`worker1.makarewicz.eu`)"
+        - "traefik.http.routers.who.tls.certresolver=le"
+#        - "traefik.http.routers.who.tls=true"
+        - "traefik.http.services.who.loadbalancer.passhostheader=true"
+        - "traefik.http.services.who.loadbalancer.server.port=80"
+
   app:
     image: docker.pkg.github.com/zimekk/swarm/app
-    environment:
-      - VIRTUAL_HOST=ubuntu,www.ubuntu
-
-  proxy:
-    image: jwilder/nginx-proxy
-    ports:
-      - 80:80
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    environment:
-      - DEFAULT_HOST=ubuntu
+    deploy:
+      replicas: 3
+      labels:
+#        - "traefik.enable=true"
+        - "traefik.http.routers.www.rule=Host(`swarm.makarewicz.eu`,`www.swarm.makarewicz.eu`)"
+        - "traefik.http.routers.www.tls.certresolver=le"
+#        - "traefik.http.routers.who.tls=true"
+        - "traefik.http.services.www.loadbalancer.passhostheader=true"
+        - "traefik.http.services.www.loadbalancer.server.port=8080"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
 
   visualizer:
     image: dockersamples/visualizer:latest
+#    ports:
+#      - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     deploy:
       placement:
         constraints: [node.role == manager]
-    environment:
-      - VIRTUAL_HOST=visualizer.ubuntu
+      labels:
+#        - "traefik.enable=true"
+        - "traefik.http.routers.viz.rule=Host(`visualizer.swarm.makarewicz.eu`)"
+        - "traefik.http.services.viz.loadbalancer.passhostheader=true"
+        - "traefik.http.services.viz.loadbalancer.server.port=8080"
+
+volumes:
+  letsencrypt:
