@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3.8"
 
 services:
   traefik:
@@ -25,7 +25,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /etc/localtime:/etc/localtime:ro
+      # - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
     deploy:
@@ -50,7 +50,7 @@ services:
     #    ports:
     #      - 8080:80
     deploy:
-      replicas: 2
+      mode: global
       labels:
         # - "traefik.enable=true"
         # - "traefik.http.routers.who.rule=Host(`54.38.138.125`,`54.38.137.98`,`worker1.makarewicz.eu`)"
@@ -62,7 +62,11 @@ services:
   app:
     image: docker.pkg.github.com/zimekk/swarm/app:$VERSION
     deploy:
-      replicas: 2
+      replicas: 3
+      placement:
+        max_replicas_per_node: 1
+      update_config:
+        parallelism: 2
       labels:
         # - "traefik.enable=true"
         - "traefik.http.routers.www.rule=Host(`swarm.makarewicz.eu`,`www.swarm.makarewicz.eu`)"

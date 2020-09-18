@@ -1,5 +1,18 @@
-version: "3.7"
+version: "3.8"
 
 services:
+  traefik:
+    entrypoint: ["echo", "Service disabled"]
+  visualizer:
+    entrypoint: ["echo", "Service disabled"]
   app:
     build: .
+    deploy:
+      replicas: 1
+    ports:
+      - "8080:8080"
+  whoami:
+    deploy:
+      replicas: 1
+    ports:
+      - "8090:80"
