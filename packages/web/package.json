@@ -1,0 +1,29 @@
+{
+  "name": "@dev/web",
+  "version": "1.0.0",
+  "license": "MIT",
+  "babel": {
+    "presets": [
+      "@env"
+    ]
+  },
+  "jest": {
+    "preset": "@env"
+  },
+  "scripts": {
+    "start": "node -r @babel/register src",
+    "start:dev": "NODE_ENV=development nodemon --exec babel-node src",
+    "debug": "NODE_ENV=development nodemon --inspect src",
+    "test": "jest"
+  },
+  "dependencies": {
+    "convict": "^6.0.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  },
+  "devDependencies": {
+    "jest": "^26.4.2",
+    "react-refresh": "^0.8.3",
+    "typescript": "^4.0.2"
+  }
+}

@@ -4,6 +4,8 @@ WORKDIR /app
 ENV NODE_ENV development
 ADD package.json yarn.lock ./
 ADD packages/app/package.json packages/app/
+ADD packages/ssr/package.json packages/ssr/
+ADD packages/web/package.json packages/web/
 ADD packages/babel-preset/package.json packages/babel-preset/
 ADD packages/jest-preset/package.json packages/jest-preset/
 RUN set -ex; \
@@ -15,7 +17,13 @@ RUN set -ex; \
 FROM dependencies as dev
 ADD babel.config.json ./
 ADD packages packages
+WORKDIR /app/packages/ssr
+RUN yarn build
+
+FROM node:10-slim
 ENV PORT 8080
 EXPOSE $PORT
-WORKDIR /app/packages/app
-CMD yarn start
+COPY --from=dev /app/node_modules/ /app/node_modules/
+COPY --from=dev /app/packages/ssr/ /app/packages/ssr/
+WORKDIR /app/packages/ssr
+CMD node lib
