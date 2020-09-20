@@ -1,0 +1,150 @@
+# https://www.rechberger.io/tutorial-install-docker-using-ansible-on-a-remote-server/
+# https://github.com/atosatto/ansible-dockerswarm
+# https://github.com/jobin-james/docker-swarm
+# https://docs.ansible.com/ansible/latest/modules/docker_node_module.html
+# https://github.com/salizzar/terraform-recipes/tree/master/ansible
+---
+- name: Install Docker
+  hosts: docker_engine
+  become: true
+  vars:
+    # CTOP_VERSION: "0.7.3"
+    # DOCKER_COMPOSE_VERSION: "1.25.1"
+    DOCKER_PACKAGES:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg-agent
+      - software-properties-common
+    # USER: "YOUR_USER_ON_THE_REMOTE_SERVER"
+
+  tasks:
+    # - name: Update apt packages
+    #   apt:
+    #     update_cache: "yes"
+    #     force_apt_get: "yes"
+
+    # - name: Install packages needed for Docker
+    #   apt:
+    #     name: "{{ DOCKER_PACKAGES }}"
+    #     state: present
+    #     force_apt_get: "yes"
+
+    # - name: Add Docker GPG apt Key
+    #   apt_key:
+    #     url: https://download.docker.com/linux/ubuntu/gpg
+    #     state: present
+
+    # - name: Save the current Ubuntu release version into a variable
+    #   shell: lsb_release -cs
+    #   register: ubuntu_version
+
+    # - name: Add Docker Repository
+    #   apt_repository:
+    #     repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ubuntu_version.stdout }} stable"
+    #     state: present
+
+    # - name: Update apt packages
+    #   apt:
+    #     update_cache: "yes"
+    #     force_apt_get: "yes"
+
+    - name: Install Docker
+      apt:
+        name: "docker-ce"
+        state: present
+        force_apt_get: "yes"
+
+  # - name: Test Docker with hello world example
+  #   shell: "docker run hello-world"
+  #   register: hello_world_output
+
+  # - name: Show output of hello word example
+  #   debug:
+  #     msg: "Container Output: {{hello_world_output.stdout}}"
+
+  # - name: Create docker group
+  #   group:
+  #     name: "docker"
+  #     state: present
+
+  # - name: Adding user {{ USER }} to docker group
+  #   user:
+  #     name: "{{ USER }}"
+  #     groups: "docker"
+  #     append: "yes"
+- name: Retrieve Swarm manager
+  hosts: docker_swarm_manager
+  tasks:
+    - name: retrieve swarm manager token
+      shell: docker swarm join-token -q manager
+      register: swarm_manager_token
+
+    - name: retrieve swarm worker token
+      shell: docker swarm join-token -q worker
+      register: swarm_worker_token
+
+    - name: populate list of manager ips
+      add_host:
+        hostname: "{{ ansible_facts.default_ipv4.address }}"
+        groups: swarm_manager_ips
+      # with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
+
+    - debug:
+        var: ansible_facts.default_ipv4.address
+
+# - name: Join worker nodes
+#   hosts: docker_swarm_worker
+#   become: true
+#   vars:
+#     TOKEN: "{{ hostvars[groups.docker_swarm_manager[0]].swarm_worker_token.stdout }}"
+#   tasks:
+#     - name: join worker nodes to cluster
+#       shell: >
+#         docker swarm join
+#         --advertise-addr={{ network_interface | default('ens160') }}:2377
+#         --token={{ TOKEN }}
+#         {{ groups.swarm_manager_ips[0] }}:2377
+
+# - debug: var=hostvars
+# - debug: var=groups['docker_swarm_manager']
+# - debug: var=groups['docker_swarm_manager'][0]
+# - debug: var=hostvars[groups['docker_swarm_manager'][0]]['swarm_worker_token']['stdout']
+# - debug: var=hostvars[groups['docker_swarm_manager']]
+# - name: retrieve swarm manager token
+#   shell: echo {{ swarm_worker_token.stdout }}
+
+- name: Assign labels
+  hosts: docker_engine
+  become: true
+  tasks:
+    - name: Get list of labels.
+      command: >-
+        docker inspect
+        --format {% raw %}'{{ range $key, $value := .Spec.Labels }}{{ printf "%s\n" $key }}{{ end }}'{% endraw %}
+        {{ ansible_fqdn|lower }}
+      register: docker_swarm_labels
+      changed_when: false
+      delegate_to: "{{ groups['docker_swarm_manager'][0] }}"
+      delegate_facts: true
+      tags:
+        - swarm_labels
+
+    - name: Remove labels from swarm node.
+      command: docker node update --label-rm {{ item }} {{ ansible_fqdn|lower }}
+      with_items: "{{ docker_swarm_labels.stdout_lines }}"
+      when: item not in swarm_labels
+      delegate_to: "{{ groups['docker_swarm_manager'][0] }}"
+      delegate_facts: true
+      tags:
+        - swarm_labels
+
+    - name: Assign labels to swarm nodes if any.
+      command: docker node update --label-add {{ item }}=true {{ ansible_fqdn|lower }}
+      when: item not in docker_swarm_labels.stdout_lines
+      with_items:
+        - "{{ swarm_labels  | default([]) }}"
+      delegate_to: "{{ groups['docker_swarm_manager'][0] }}"
+      delegate_facts: true
+      tags:
+        - swarm_labels

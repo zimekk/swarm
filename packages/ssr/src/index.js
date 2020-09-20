@@ -1,5 +1,5 @@
 import path from "path";
-import express from "express";
+// import express from "express";
 import render from "@dev/web/src/server";
 import assets from "./assets";
 import config from "./config";
@@ -8,6 +8,9 @@ import { name, version } from "../package";
 export default render;
 
 if (process.env.NODE_ENV === "production") {
+  const apm = require("elastic-apm-node").start();
+  const express = require("express");
+
   const server = express()
     .get("/", (req, res) => res.send(render({ assets })))
     .get("/status", (req, res) =>

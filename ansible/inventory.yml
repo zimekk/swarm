@@ -1,0 +1,17 @@
+# https://github.com/atosatto/ansible-dockerswarm
+
+s1-2-manager ansible_ssh_host=54.38.137.98 ansible_user=ubuntu
+s1-2-waw1 ansible_ssh_host=54.38.138.125 ansible_user=core
+s1-8-worker2 ansible_ssh_host=51.83.254.60 ansible_user=ubuntu
+
+[docker_engine]
+s1-2-manager
+# s1-2-waw1
+s1-8-worker2
+
+[docker_swarm_manager]
+s1-2-manager swarm_labels=deploy
+
+[docker_swarm_worker]
+# s1-2-waw1 swarm_labels='["libvirt", "docker", "foo", "bar"]'
+s1-8-worker2 swarm_labels='["elastic"]'

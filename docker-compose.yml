@@ -90,5 +90,57 @@ services:
         - "traefik.http.services.viz.loadbalancer.passhostheader=true"
         - "traefik.http.services.viz.loadbalancer.server.port=8080"
 
+  # https://github.com/elastic/examples
+  # https://itnext.io/distributed-tracing-in-your-kibana-with-nodejs-610c9f07b4b4
+  # https://github.com/elastic/apm-agent-nodejs
+  # https://www.elastic.co/blog/distributed-tracing-opentracing-and-elastic-apm
+  # https://medium.com/swlh/microservices-observability-with-distributed-tracing-32ae467bb72a
+  # https://github.com/opentracing/opentracing-javascript
+  # https://github.com/jaegertracing/jaeger-client-node
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - discovery.type=single-node
+    deploy:
+      placement:
+        constraints: [node.labels.elastic == true]
+      # labels:
+      #   - "traefik.http.routers.elasticsearch.rule=Host(`elasticsearch.swarm.makarewicz.eu`)"
+      #   - "traefik.http.routers.elasticsearch.tls.certresolver=le"
+      #   - "traefik.http.services.elasticsearch.loadbalancer.server.port=9200"
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.4.0
+    depends_on:
+      - elasticsearch
+    environment:
+      - output.elasticsearch.hosts=["elasticsearch:9200"]
+    volumes:
+      - "./apm-server.yml:/usr/share/apm-server/apm-server.yml:ro"
+    ports:
+      - 8200:8200
+    deploy:
+      placement:
+        constraints: [node.labels.elastic == true]
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.4.0
+    depends_on:
+      - elasticsearch
+    # ports:
+    #   - 5601:5601
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    deploy:
+      placement:
+        constraints: [node.labels.elastic == true]
+      labels:
+        - "traefik.http.routers.kibana.rule=Host(`kibana.swarm.makarewicz.eu`)"
+        - "traefik.http.routers.kibana.tls.certresolver=le"
+        - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+
 volumes:
   letsencrypt:
