@@ -2,6 +2,12 @@
 
 ## install
 
+```sh
+~$ nvm install v12
+~$ node -v
+v12.18.4
+```
+
 - https://docs.docker.com/engine/install/
 
 ```sh

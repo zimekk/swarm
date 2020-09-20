@@ -1,4 +1,4 @@
-FROM node:10-slim AS dependencies
+FROM node:12-slim AS dependencies
 WORKDIR /app
 # https://www.docker.com/blog/keep-nodejs-rockin-in-docker/
 ENV NODE_ENV development
@@ -20,7 +20,7 @@ ADD packages packages
 WORKDIR /app/packages/ssr
 RUN yarn build
 
-FROM node:10-slim
+FROM node:12-slim
 ENV PORT 8080
 EXPOSE $PORT
 COPY --from=dev /app/node_modules/ /app/node_modules/
