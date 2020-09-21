@@ -97,43 +97,42 @@ services:
   # https://medium.com/swlh/microservices-observability-with-distributed-tracing-32ae467bb72a
   # https://github.com/opentracing/opentracing-javascript
   # https://github.com/jaegertracing/jaeger-client-node
+  # https://github.com/yidinghan/eak/blob/master/docker-compose.yml
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-    ports:
-      - 9200:9200
-      - 9300:9300
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
     environment:
-      - discovery.type=single-node
+      - "cluster.routing.allocation.disk.threshold_enabled=false"
+      - "discovery.type=single-node"
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    # ports:
+    #   - 9200:9200
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:9200"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
     deploy:
       placement:
         constraints: [node.labels.elastic == true]
-      # labels:
-      #   - "traefik.http.routers.elasticsearch.rule=Host(`elasticsearch.swarm.makarewicz.eu`)"
-      #   - "traefik.http.routers.elasticsearch.tls.certresolver=le"
-      #   - "traefik.http.services.elasticsearch.loadbalancer.server.port=9200"
-
-  apm-server:
-    image: docker.elastic.co/apm/apm-server:7.4.0
-    depends_on:
-      - elasticsearch
-    environment:
-      - output.elasticsearch.hosts=["elasticsearch:9200"]
-    volumes:
-      - "./apm-server.yml:/usr/share/apm-server/apm-server.yml:ro"
-    ports:
-      - 8200:8200
-    deploy:
-      placement:
-        constraints: [node.labels.elastic == true]
+      labels:
+        - "traefik.http.routers.elasticsearch.rule=Host(`elasticsearch.swarm.makarewicz.eu`)"
+        - "traefik.http.routers.elasticsearch.tls.certresolver=le"
+        - "traefik.http.services.elasticsearch.loadbalancer.server.port=9200"
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.4.0
-    depends_on:
-      - elasticsearch
+    image: docker.elastic.co/kibana/kibana:7.7.1
+    environment:
+      - "SERVER_HOST=0.0.0.0"
     # ports:
     #   - 5601:5601
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:5601"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
+    depends_on:
+      - elasticsearch
     deploy:
       placement:
         constraints: [node.labels.elastic == true]
@@ -141,6 +140,24 @@ services:
         - "traefik.http.routers.kibana.rule=Host(`kibana.swarm.makarewicz.eu`)"
         - "traefik.http.routers.kibana.tls.certresolver=le"
         - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.7.1
+    ports:
+      - 8200:8200
+    environment:
+      - output.elasticsearch.hosts=['http://elasticsearch:9200']
+      - apm-server.host="0.0.0.0:8200"
+      # - apm-server.secret_token="xxVpmQB2HMzCL9PgBHVrnxjNXXw5J7bd79DFm6sjBJR5HPXDhcF8MSb3vv4bpg44"
+      - setup.kibana.host="kibana:5601"
+      - setup.template.enabled=true
+      - logging.to_files=false
+    depends_on:
+      - elasticsearch
+      - kibana
+    deploy:
+      placement:
+        constraints: [node.labels.elastic == true]
 
 volumes:
   letsencrypt:
