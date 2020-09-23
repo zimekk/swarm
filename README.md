@@ -1,5 +1,9 @@
 # swarm
 
+```sh
+~/projects/swarm/ansible$ ansible-playbook -i inventory.yml playbook.yml
+```
+
 ## install
 
 ```sh
