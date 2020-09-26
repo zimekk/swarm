@@ -1,7 +1,8 @@
 # swarm
 
 ```sh
-~/projects/swarm/ansible$ ansible-playbook -i inventory.yml playbook.yml
+~/projects/swarm/ansible$ ansible -i inventory.ini -m ping all
+~/projects/swarm/ansible$ ansible-playbook -i inventory.ini playbook.yml
 ```
 
 ## install
