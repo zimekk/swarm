@@ -1,0 +1,77 @@
+# https://github.com/piwi3910/techtalk/blob/master/Docker_series/05/code/roles/local/glusterfs/tasks/main.yml
+# https://www.youtube.com/watch?v=ullkbtc31FY
+---
+- name: Install GlusterFS
+  hosts: gluster
+  become: true
+  vars:
+    gluster_brick_path: /data/glusterfs/brick01
+    gluster_version: 7
+  tasks:
+    - name: Update the /etc/hosts file with node name
+      tags: etchostsupdate
+      lineinfile:
+        path: "/etc/hosts"
+        regexp: ".*\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
+        line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}\t{{ hostvars[item]['ansible_hostname']}}"
+        state: present
+      register: etchostsupdate
+      with_items: "{{ play_hosts }}"
+
+    - name: add glusterfs ppa repo
+      apt_repository:
+        validate_certs: no
+        repo: "ppa:gluster/glusterfs-{{ gluster_version }}"
+        filename: "glusterfs-{{ gluster_version }}"
+        update_cache: yes
+        state: present
+
+    - name: install glusterfs
+      apt:
+        name: glusterfs-server
+        state: present
+
+    - name: Ensure that the glusterfs service is enabled and started at boot time
+      service:
+        name: glusterd
+        enabled: yes
+        state: started
+
+    - name: add peers to gluster cluster
+      gluster_peer:
+        state: present
+        nodes: "{{ play_hosts }}"
+      delegate_to: "{{ play_hosts | first }}"
+
+    - name: create glusterfs brick dir
+      file:
+        path: "{{ gluster_brick_path }}"
+        state: directory
+
+    - name: create gluster volume
+      gluster_volume:
+        state: present
+        name: gv0
+        bricks: "{{ gluster_brick_path }}/g1"
+        rebalance: yes
+        force: true
+        cluster: "{{ play_hosts }}"
+      run_once: true
+
+    - name: Set multiple options on GlusterFS volume
+      gluster_volume:
+        state: present
+        name: gv0
+        options:
+          {
+            performance.cache-size: 256MB,
+            write-behind: "off",
+            quick-read: "on",
+          }
+      run_once: true
+
+    - name: start gluster volume
+      gluster_volume:
+        state: started
+        name: gv0
+      run_once: true
