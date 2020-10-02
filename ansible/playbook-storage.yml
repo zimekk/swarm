@@ -1,12 +1,46 @@
 # https://github.com/piwi3910/techtalk/blob/master/Docker_series/05/code/roles/local/glusterfs/tasks/main.yml
 # https://www.youtube.com/watch?v=ullkbtc31FY
 ---
+- name: Create Storage
+  hosts: storage
+  become: true
+  vars:
+    # gluster_brick_path: /data/glusterfs/brick01
+    # gluster_version: 7
+    file_system: xfs
+    # mount_point: /mnt/bricks/brick01
+  tasks:
+    - name: Create the file system on newly created Logical volume for "{{ mount_point }}".
+      # remote_user: ansible
+      # become: yes
+      # become_method: sudo
+      filesystem:
+        fstype: "{{ file_system }}" ## What type of filesystem required eg:(ext3, ext4, xfs etc.)
+        # dev: "/dev/mapper/{{ vg_name }}-{{ lv_name }}" ## Full related path of device mapper to be created with creating FS.
+        dev: "{{ device }}"
+      tags:
+        - device
+
+    - name: Mount the created filesystem ## This is to create the FSTAB entry and mount the Filesystem.
+      # remote_user: ansible
+      # become: yes
+      # become_method: sudo
+      mount:
+        path: "{{ mount_point }}" ## Mount point where to mount the FS.
+        src: "{{ device }}"
+        # src: "/dev/mapper/{{ vg_name }}-{{ lv_name }}" ## Full related path of device mapper to be mounted under mount point.
+        fstype: "{{ file_system }}" ## Filesystem type
+        opts: rw,noatime,noexec,nodev,nosuid ## Mount options
+        state: mounted
+      tags:
+        - device
+
 - name: Install GlusterFS
   hosts: gluster
   become: true
   vars:
     # gluster_brick_path: /data/glusterfs/brick01
-    gluster_brick_path: "{{ mount_point }}/brick01"
+    # gluster_brick_path: "{{ mount_point }}/brick01"
     gluster_version: 7
   tasks:
     - name: Update the /etc/hosts file with node name
@@ -48,6 +82,9 @@
       file:
         path: "{{ gluster_brick_path }}"
         state: directory
+      when: gluster_brick_path is defined
+      tags:
+        - gluster_brick_path
 
     - name: create gluster volume
       gluster_volume:
@@ -58,6 +95,9 @@
         force: true
         cluster: "{{ play_hosts }}"
       run_once: true
+      when: gluster_brick_path is defined
+      tags:
+        - gluster_brick_path
 
     - name: Set multiple options on GlusterFS volume
       gluster_volume:
@@ -70,9 +110,27 @@
             quick-read: "on",
           }
       run_once: true
+      # tags:
+      #   - device
 
     - name: start gluster volume
       gluster_volume:
         state: started
         name: gv0
       run_once: true
+      # tags:
+      #   - device
+
+    - name: Mount the created filesystem ## This is to create the FSTAB entry and mount the Filesystem.
+      # remote_user: ansible
+      # become: yes
+      # become_method: sudo
+      mount:
+        path: /mnt/gv0 ## Mount point where to mount the FS.
+        src: localhost:/gv0
+        # src: "/dev/mapper/{{ vg_name }}-{{ lv_name }}" ## Full related path of device mapper to be mounted under mount point.
+        fstype: glusterfs ## Filesystem type
+        # opts: rw,noatime,noexec,nodev,nosuid ## Mount options
+        state: mounted
+      # tags:
+      #   - device

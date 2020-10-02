@@ -2,7 +2,43 @@
 
 ```sh
 ~/projects/swarm/ansible$ ansible -i inventory.ini -m ping all
-~/projects/swarm/ansible$ ansible-playbook -i inventory.ini playbook.yml
+~/projects/swarm/ansible$ ssh-keygen -t rsa -b 4096 -C "$(git config user.email)" -f docker-ssh -N ""
+~/projects/swarm/ansible$ ssh-copy-id -i docker-ssh.pub ubuntu@54.38.137.98
+~/projects/swarm/ansible$ printf "DOCKER_SSH_PRIVATE_KEY:\n$(cat ./docker-ssh)\n"
+~/projects/swarm/ansible$ printf "DOCKER_SSH_PUBLIC_KEY:\n$(cat ~/.ssh/known_hosts | grep 54.38.137.98)\n"
+```
+
+## storage
+
+```sh
+~/projects/swarm/ansible$ ansible-playbook -i inventory.ini playbook-storage.yml
+```
+
+```sh
+ubuntu@s1-2-manager:~$ cat /etc/hosts
+ubuntu@s1-2-manager:~$ sudo gluster pool list
+ubuntu@s1-2-manager:~$ sudo gluster volume status
+ubuntu@s1-2-manager:~$ ls /mnt/gv0/
+```
+
+## cluster
+
+```sh
+~/projects/swarm/ansible$ ansible-playbook -i inventory.ini playbook-cluster.yml
+```
+
+```sh
+ubuntu@s1-2-manager:~$ docker info
+ubuntu@s1-2-manager:~$ docker node ls
+ubuntu@s1-2-manager:~$ echo $GH_TOKEN | docker login https://docker.pkg.github.com -u zimekk --password-stdin
+ubuntu@s1-2-manager:~$ curl https://raw.githubusercontent.com/zimekk/swarm/master/docker-compose.yml | VERSION=latest docker stack deploy --compose-file - --prune --resolve-image always --with-registry-auth swarm
+ubuntu@s1-2-manager:~$ docker service ls
+ubuntu@s1-2-manager:~$ docker service ps swarm_app
+ubuntu@s1-2-manager:~$ watch docker stack ps swarm
+```
+
+```sh
+~/projects/swarm$ VERSION=latest docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.yml --prune --resolve-image always --with-registry-auth swarm
 ```
 
 ## install
@@ -35,7 +71,7 @@ docker-compose version 1.26.2, build eefe0d31
 ```
 
 ```sh
-~/projects/swarm$ sudo docker swarm init
+~/projects/swarm$ docker swarm init
 ~/projects/swarm$ docker node ls
 ```
 

@@ -8,7 +8,9 @@
   hosts: docker_engine
   become: true
   vars:
-    DOCKER_PACKAGES:
+    docker_users:
+      - ubuntu
+    docker_packages:
       - apt-transport-https
       - ca-certificates
       - curl
@@ -16,15 +18,15 @@
       - software-properties-common
 
   tasks:
-    - name: Update apt packages
-      apt:
-        update_cache: "yes"
-        upgrade: "yes"
-        force_apt_get: "yes"
+    # - name: Update apt packages
+    #   apt:
+    #     update_cache: "yes"
+    #     upgrade: "yes"
+    #     force_apt_get: "yes"
 
     - name: Install packages needed for Docker
       apt:
-        name: "{{ DOCKER_PACKAGES }}"
+        name: "{{ docker_packages }}"
         state: present
         force_apt_get: "yes"
 
@@ -42,10 +44,10 @@
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ubuntu_version.stdout }} stable"
         state: present
 
-    - name: Update apt packages
-      apt:
-        update_cache: "yes"
-        force_apt_get: "yes"
+    # - name: Update apt packages
+    #   apt:
+    #     update_cache: "yes"
+    #     force_apt_get: "yes"
 
     - name: Install Docker
       apt:
@@ -53,9 +55,31 @@
         state: present
         force_apt_get: "yes"
 
+    - name: users | adding docker users (for use without sudo)
+      user:
+        name: "{{ item }}"
+        append: yes
+        groups: docker
+      become: true
+      with_items: "{{ docker_users }}"
+
 - name: Retrieve Swarm manager
   hosts: docker_swarm_manager
+  become: true
   tasks:
+    - name: Get info on Docker Swarm
+      shell: docker info --format {% raw %}'{{json .Swarm.LocalNodeState}}'{% endraw %}
+      register: swarm_state
+
+    - debug:
+        var: swarm_state.stdout
+
+    - name: Init a new swarm with default parameters
+      shell: docker swarm init
+      # docker_swarm:
+      #   state: present
+      when: '"inactive" in swarm_state.stdout'
+
     - name: retrieve swarm manager token
       shell: docker swarm join-token -q manager
       register: swarm_manager_token
@@ -83,8 +107,8 @@
       shell: docker info --format {% raw %}'{{json .Swarm.LocalNodeState}}'{% endraw %}
       register: swarm_state
 
-    # - debug:
-    #     var: swarm_state.stdout
+    - debug:
+        var: swarm_state.stdout
 
     - name: join worker nodes to cluster
       shell: >
@@ -92,6 +116,7 @@
         --token={{ TOKEN }}
         {{ groups.swarm_manager_ips[0] }}:2377
       when: '"inactive" in swarm_state.stdout'
+      # when: '"active" not in swarm_state.stdout'
 
 - name: Assign labels
   hosts: docker_engine
