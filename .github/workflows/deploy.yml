@@ -51,16 +51,16 @@ jobs:
 
       - name: Build image
         run: |
-          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID=${{ github.repository_owner }}/$IMAGE_NAME
           docker build . --tag $IMAGE_ID:${GITHUB_SHA::7} --tag $IMAGE_ID:latest
 
       - name: Log into registry
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.CR_PAT }}" | docker login -u ${{ github.repository_owner }} --password-stdin
 
       - name: Push image
         run: |
-          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID=${{ github.repository_owner }}/$IMAGE_NAME
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           # Strip "v" prefix from tag name
