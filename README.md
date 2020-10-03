@@ -41,6 +41,16 @@ ubuntu@s1-2-manager:~$ watch docker stack ps swarm
 ~/projects/swarm$ VERSION=latest docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.yml --prune --resolve-image always --with-registry-auth swarm
 ```
 
+## swarmpit
+
+```sh
+ubuntu@s1-2-manager:~$ docker node update --label-add swarmpit.influx-data=true $(docker info -f '{{.Swarm.NodeID}}')
+```
+
+```sh
+$ DOMAIN=swarmpit.swarm.makarewicz.eu docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.swarmpit.yml swarmpit
+```
+
 ## install
 
 ```sh
