@@ -87,8 +87,10 @@ services:
       labels:
         # - "traefik.enable=true"
         - "traefik.http.routers.viz.rule=Host(`visualizer.swarm.makarewicz.eu`)"
+        - "traefik.http.routers.viz.tls.certresolver=le"
         - "traefik.http.services.viz.loadbalancer.passhostheader=true"
         - "traefik.http.services.viz.loadbalancer.server.port=8080"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
 
   # https://github.com/elastic/examples
   # https://itnext.io/distributed-tracing-in-your-kibana-with-nodejs-610c9f07b4b4

@@ -10,6 +10,8 @@
 
 ## storage
 
+- [Setup Highly Available applications with Docker Swarm and Gluster](https://medium.com/running-a-software-factory/setup-3-node-high-availability-cluster-with-glusterfs-and-docker-swarm-b4ff80c6b5c3)
+
 ```sh
 ~/projects/swarm/ansible$ ansible-playbook -i inventory.ini playbook-storage.yml
 ```
@@ -43,12 +45,24 @@ ubuntu@s1-2-manager:~$ watch docker stack ps swarm
 
 ## swarmpit
 
+- [Swarmpit web user interface for your Docker Swarm cluster](https://dockerswarm.rocks/swarmpit/)
+
 ```sh
 ubuntu@s1-2-manager:~$ docker node update --label-add swarmpit.influx-data=true $(docker info -f '{{.Swarm.NodeID}}')
 ```
 
 ```sh
-$ DOMAIN=swarmpit.swarm.makarewicz.eu docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.swarmpit.yml swarmpit
+~/projects/swarm$ DOMAIN=swarmpit.swarm.makarewicz.eu docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.swarmpit.yml swarmpit
+```
+
+## tick
+
+Monitor Swarm Cluster with Telegraf, InfluxDB, Chronograf, Kapacitor & Slack
+
+- [Monitor Swarm cluster with TICK stack & Slack](http://www.blog.labouardy.com/monitor-swarm-cluster-with-tick-stack-slack/)
+
+```sh
+~/projects/swarm$ docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.tick.yml tick
 ```
 
 ## install
