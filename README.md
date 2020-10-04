@@ -59,10 +59,18 @@ ubuntu@s1-2-manager:~$ docker node update --label-add swarmpit.influx-data=true 
 
 Monitor Swarm Cluster with Telegraf, InfluxDB, Chronograf, Kapacitor & Slack
 
-- [Monitor Swarm cluster with TICK stack & Slack](http://www.blog.labouardy.com/monitor-swarm-cluster-with-tick-stack-slack/)
+- [Monitor Swarm cluster with TICK stack & Slack](https://hackernoon.com/monitor-swarm-cluster-with-tick-stack-slack-3aaa6483d44a)
 
 ```sh
 ~/projects/swarm$ docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.tick.yml tick
+```
+
+## prometheus
+
+- [Monitoring Docker Swarm](https://dzone.com/articles/monitoring-docker-swarm)
+
+```sh
+~/projects/swarm$ docker --host ssh://ubuntu@54.38.137.98 stack deploy --compose-file docker-compose.prom.yml prom
 ```
 
 ## install

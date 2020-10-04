@@ -35,8 +35,9 @@ services:
         # - "traefik.enable=true" # Enable Traefik, because we disabled expose a service by default
         - "traefik.http.routers.t.rule=Host(`traefik.swarm.makarewicz.eu`)" # Tell Traefik to create routre 't' and catch all requests with given Host (http header: Host)
         - "traefik.http.routers.t.service=api@internal" # the router 't' will forward request to service api@internal
+        - "traefik.http.routers.t.tls.certresolver=le"
+        - "traefik.http.services.t.loadbalancer.passhostheader=true"
         - "traefik.http.services.t.loadbalancer.server.port=8080" # the router 't' will balance incoming requests between servers listens on port 8080
-        # - "traefik.http.services.t.loadbalancer.passhostheader=true"
         # https://stackoverflow.com/a/58477067
         # middleware redirect
         - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
@@ -54,7 +55,7 @@ services:
       labels:
         # - "traefik.enable=true"
         # - "traefik.http.routers.who.rule=Host(`54.38.138.125`,`54.38.137.98`,`worker1.makarewicz.eu`)"
-        - "traefik.http.routers.who.rule=Host(`worker1.makarewicz.eu`)"
+        - "traefik.http.routers.who.rule=Host(`worker1.makarewicz.eu`,`whoami.swarm.makarewicz.eu`)"
         - "traefik.http.routers.who.tls.certresolver=le"
         - "traefik.http.services.who.loadbalancer.passhostheader=true"
         - "traefik.http.services.who.loadbalancer.server.port=80"

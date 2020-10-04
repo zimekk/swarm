@@ -1,0 +1,95 @@
+# https://dzone.com/articles/monitoring-docker-swarm
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus
+    # volumes:
+    #   - $PWD/management/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    configs:
+      - source: prometheus-config
+        target: /etc/prometheus/prometheus.yml
+    # ports:
+    #   - 9090:9090
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.http.routers.prometheus.rule=Host(`prometheus.swarm.makarewicz.eu`)"
+        - "traefik.http.routers.prometheus.tls.certresolver=le"
+        - "traefik.http.services.prometheus.loadbalancer.passhostheader=true"
+        - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+    networks:
+      - frontend
+      - backend
+
+  manager-001:
+    image: prom/node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/host"
+      - '--collector.filesystem.ignored-mount-points="^(/rootfs|/host|)/(sys|proc|dev|host|etc)($$|/)"'
+      - '--collector.filesystem.ignored-fs-types="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
+    deploy:
+      placement:
+        constraints:
+          # Hostname of the manager node!
+          - node.hostname == s1-2-manager
+    networks:
+      - backend
+
+  docker-manager-001:
+    image: google/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    deploy:
+      placement:
+        constraints:
+          # Hostname of the first manager node!
+          - node.hostname == s1-2-manager
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.http.routers.grafana.rule=Host(`grafana.swarm.makarewicz.eu`)"
+        - "traefik.http.routers.grafana.tls.certresolver=le"
+        - "traefik.http.services.grafana.loadbalancer.passhostheader=true"
+        - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+    # ports:
+    #   - 3000:3000
+    networks:
+      - frontend
+      - backend
+
+configs:
+  prometheus-config:
+    file: $PWD/management/monitoring/prometheus.yml
+
+networks:
+  backend:
+    driver: overlay
+  frontend:
+    external: true
+    name: swarm_default
+
+volumes:
+  grafana-data:
