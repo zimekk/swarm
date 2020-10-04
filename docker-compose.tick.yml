@@ -46,7 +46,7 @@ services:
         - "traefik.http.services.chronograf.loadbalancer.passhostheader=true"
         - "traefik.http.services.chronograf.loadbalancer.server.port=8888"
         - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
-        - "traefik.docker.network=swarm_tick-net"
+        - "traefik.docker.network=swarm_default"
 
   kapacitor:
     image: kapacitor:1.2

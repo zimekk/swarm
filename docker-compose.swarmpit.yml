@@ -46,6 +46,7 @@ services:
         - "traefik.http.services.swarmpit-https.loadbalancer.passhostheader=true"
         - "traefik.http.services.swarmpit-https.loadbalancer.server.port=8080"
         # - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+        - "traefik.docker.network=swarm_default"
 
   db:
     image: couchdb:2.3.0
