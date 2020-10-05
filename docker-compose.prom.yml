@@ -9,6 +9,10 @@ services:
     configs:
       - source: prometheus-config
         target: /etc/prometheus/prometheus.yml
+      - source: node_rules
+        target: /etc/prometheus/swarm_node.rules.yml
+      - source: task_rules
+        target: /etc/prometheus/swarm_task.rules.yml
     # ports:
     #   - 9090:9090
     deploy:
@@ -26,12 +30,15 @@ services:
       - frontend
       - backend
 
-  manager-001:
+  node-exporter:
     image: prom/node-exporter
+    environment:
+      - NODE_ID={{.Node.ID}}
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      - /etc/hostname:/etc/nodename
     command:
       - "--path.procfs=/host/proc"
       - "--path.sysfs=/host/sys"
@@ -39,27 +46,33 @@ services:
       - '--collector.filesystem.ignored-mount-points="^(/rootfs|/host|)/(sys|proc|dev|host|etc)($$|/)"'
       - '--collector.filesystem.ignored-fs-types="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
     deploy:
-      placement:
-        constraints:
-          # Hostname of the manager node!
-          - node.hostname == s1-2-manager
+      mode: global
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
     networks:
       - backend
 
-  docker-manager-001:
-    image: google/cadvisor:latest
+  cadvisor:
+    image: google/cadvisor
+    networks:
+      - backend
+    command: -logtostderr -docker_only
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run:/var/run
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     deploy:
-      placement:
-        constraints:
-          # Hostname of the first manager node!
-          - node.hostname == s1-2-manager
-    networks:
-      - backend
+      mode: global
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
   grafana:
     image: grafana/grafana
@@ -85,6 +98,10 @@ services:
 configs:
   prometheus-config:
     file: $PWD/management/monitoring/prometheus.yml
+  node_rules:
+    file: $PWD/management/monitoring/rules/swarm_node.rules.yml
+  task_rules:
+    file: $PWD/management/monitoring/rules/swarm_task.rules.yml
 
 networks:
   backend:
