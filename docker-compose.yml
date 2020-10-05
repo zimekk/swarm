@@ -11,6 +11,8 @@ services:
       # - "--providers.docker=true"
       # - "--providers.docker.watch=true"
       - "--providers.docker.swarmmode=true"
+      - "--metrics.prometheus=true"
+      # - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
       # - "--providers.docker.network=proxy"
       # - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       # - "--providers.docker.swarmModeRefreshSeconds=15s"
