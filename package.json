@@ -17,6 +17,7 @@
   },
   "scripts": {
     "reset": "rm -rf yarn.lock node_modules packages/*/*/node_modules",
+    "start": "yarn workspace @dev/ssr start",
     "test": "yarn workspaces run test",
     "update": "yarn upgrade-interactive --latest"
   },
@@ -27,7 +28,7 @@
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
     "husky": "^4.3.0",
-    "lint-staged": "^10.4.0",
-    "prettier": "^2.1.2"
+    "lint-staged": "^10.5.2",
+    "prettier": "^2.2.1"
   }
 }
